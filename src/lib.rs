@@ -40,6 +40,7 @@ pub fn test_panic_handler(info: &PanicInfo) -> ! {
     serial_println!("[Failed]\n");
     serial_println!("error: {}\n", info);
     exit_Q(QEC::Failed);
+    hlt_loop();
     loop {}
 }
 
@@ -50,6 +51,7 @@ pub extern "C" fn _start() -> ! {
     gdt::init();
     interrupts::init_idt();
     test_main();
+    hlt_loop();
     loop {}
 }
 
@@ -76,5 +78,16 @@ pub fn exit_Q(exit_code: QEC) {
 }
 
 pub fn init() {
+    gdt::init();
     interrupts::init_idt();
+    unsafe {
+        interrupts::PICS.lock().initialize();
+    };
+    x86_64::instructions::interrupts::enable();
+}
+
+pub fn hlt_loop() -> ! {
+    loop {
+        x86_64::instructions::hlt();
+    }
 }

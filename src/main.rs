@@ -17,7 +17,11 @@ pub extern "C" fn _start() -> ! {
     test_main();
 
     println!("no crashy!!!");
-    loop {}
+    droplet::hlt_loop();
+    loop {
+        use droplet::print;
+        print!("-")
+    }
 }
 
 #[cfg(not(test))]
@@ -25,6 +29,7 @@ pub extern "C" fn _start() -> ! {
 fn panic(info: &PanicInfo) -> ! {
     println!("{}", info);
     loop {}
+    droplet::hlt_loop();
 }
 
 #[cfg(test)]
