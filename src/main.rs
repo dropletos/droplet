@@ -4,22 +4,50 @@
 #![test_runner(droplet::test_runner)]
 #![reexport_test_harness_main = "test_main"]
 
+use bootloader::{BootInfo, entry_point};
 use core::{fmt::Write, panic::PanicInfo};
-use droplet::println;
+use droplet::{memory, println};
+use x86_64::{
+    PhysAddr,
+    structures::paging::{Page, Translate},
+};
 
-#[unsafe(no_mangle)]
-pub extern "C" fn _start() -> ! {
-    println!("HALLO{}", 4.9 / 5.4);
+entry_point!(kernel_main);
 
+fn kernel_main(boot_info: &'static BootInfo) -> ! {
+    use droplet::memory;
+    use droplet::memory::BootInfoFrameAllocator;
+    use x86_64::{VirtAddr, structures::paging::page};
+
+    println!("hellow world{}", "wow");
     droplet::init();
 
-    use x86_64::registers::control::Cr3;
+    let phys_mem_offset = VirtAddr::new(boot_info.physical_memory_offset);
+    let mut mapper = unsafe { memory::init(phys_mem_offset) };
+    let mut frame_allocator = memory::EmptyFrameAllocator;
 
-    let (level_4_page_table, _) = Cr3::read();
-    println!(
-        "Level 4 page table at: {:?}",
-        level_4_page_table.start_address()
-    );
+    let page = Page::containing_address(VirtAddr::new(0));
+    memory::create_example_mapping(page, &mut mapper, &mut frame_allocator);
+
+    let page_ptr: *mut u64 = page.start_address().as_mut_ptr();
+    unsafe {
+        page_ptr.offset(400).write_volatile(0x_f021_f077_f065_f04e);
+    }
+
+    let mut frame_allocator = unsafe { BootInfoFrameAllocator::init(&boot_info.memory_map) };
+
+    let addresses = [
+        0xb8000,
+        0x201008,
+        0x0100_0020_1a10,
+        boot_info.physical_memory_offset,
+    ];
+
+    for &address in &addresses {
+        let virt = VirtAddr::new(address);
+        let phys = mapper.translate_addr(virt);
+        println!("{:?} -> {:?}", virt, phys);
+    }
 
     #[cfg(test)]
     test_main();
@@ -46,4 +74,4 @@ fn panic(info: &PanicInfo) -> ! {
     droplet::test_panic_handler(info);
 }
 
-//https://os.phil-opp.com/hardware-interrupts/
+// https://os.phil-opp.com/paging-implementation/#bootloader-support - aqui
