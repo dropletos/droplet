@@ -6,11 +6,14 @@
 
 use bootloader::{BootInfo, entry_point};
 use core::{fmt::Write, panic::PanicInfo};
-use droplet::{memory, println};
+use droplet::{allocator, memory, println};
 use x86_64::{
     PhysAddr,
     structures::paging::{Page, Translate},
 };
+extern crate alloc;
+
+use alloc::{boxed::Box, rc::Rc, vec, vec::Vec};
 
 entry_point!(kernel_main);
 
@@ -49,6 +52,29 @@ fn kernel_main(boot_info: &'static BootInfo) -> ! {
         println!("{:?} -> {:?}", virt, phys);
     }
 
+    allocator::init_heap(&mut mapper, &mut frame_allocator).expect("heap initalisation failed");
+
+    let heap_value = Box::new(41);
+    println!("heap_value at {:p}", heap_value);
+
+    let mut vec = Vec::new();
+    for i in 0..500 {
+        vec.push(1);
+    }
+    println!("vec at {:p}", vec.as_slice());
+
+    let reference_counted = Rc::new(vec![1, 2, 3]);
+    let cloned_reference = reference_counted.clone();
+    println!(
+        "current reference is {}",
+        Rc::strong_count(&cloned_reference)
+    );
+    core::mem::drop(reference_counted);
+    println!(
+        "reference count is {} agora",
+        Rc::strong_count(&cloned_reference)
+    );
+
     #[cfg(test)]
     test_main();
 
@@ -74,4 +100,4 @@ fn panic(info: &PanicInfo) -> ! {
     droplet::test_panic_handler(info);
 }
 
-// https://os.phil-opp.com/paging-implementation/#bootloader-support - aqui
+// https://os.phil-opp.com/heap-allocation/ - tas aqui
