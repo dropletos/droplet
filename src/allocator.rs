@@ -3,10 +3,11 @@ use bump::BumpAllocator;
 use core::ptr::null_mut;
 use linked_list_allocator::LockedHeap;
 use x86_64::{
-    VirtAddr, addr,
+    addr,
     structures::paging::{
-        FrameAllocator, Mapper, Page, PageTableFlags, Size4KiB, mapper::MapToError,
+        mapper::MapToError, FrameAllocator, Mapper, Page, PageTableFlags, Size4KiB,
     },
+    VirtAddr,
 };
 
 #[global_allocator]

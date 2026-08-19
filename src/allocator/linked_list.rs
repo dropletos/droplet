@@ -80,7 +80,7 @@ impl LinkedListAllocator {
         }
 
         Ok(alloc_start);
-    }
+    };
 }
 
 use super::Locked;
