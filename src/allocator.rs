@@ -10,7 +10,7 @@ use x86_64::{
 };
 
 #[global_allocator]
-static ALLOCATOR: Locked<BumpAllocator> = Locked::new(BumpAllocator::new());
+static ALLOCATOR: LockedHeap = LockedHeap::empty();
 
 pub mod bump;
 pub mod linked_list;
@@ -24,7 +24,11 @@ pub fn init_heap(
         let heap_end = heap_start + HEAP_SIZE as u64 - 1u64;
         let heap_start_page = Page::containing_address(heap_start);
         let heap_end_page = Page::containing_address(heap_end);
-        Page::range_inclusive(heap_start_page, heap_end_page)
+        Page::range_inclusive(heap_start_page, heap_end_page);
+        unsafe {
+            ALLOCATOR.lock().init(HEAP_START, HEAP_SIZE);
+        }
+        Ok(());
     };
 
     for page in page_range {
