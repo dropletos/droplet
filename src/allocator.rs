@@ -9,9 +9,10 @@ use x86_64::{
 };
 
 #[global_allocator]
-static ALLOCATOR: LockedHeap = LockedHeap::empty();
+static ALLOCATOR: Locked<FixedSizeBlockAllocator> = Locked::new(FixedSizeBlockAllocator::new());
 
 pub mod bump;
+pub mod fixed_size_block;
 pub mod linked_list;
 
 pub fn init_heap(
@@ -23,11 +24,7 @@ pub fn init_heap(
         let heap_end = heap_start + HEAP_SIZE as u64 - 1u64;
         let heap_start_page = Page::containing_address(heap_start);
         let heap_end_page = Page::containing_address(heap_end);
-        Page::range_inclusive(heap_start_page, heap_end_page);
-        unsafe {
-            ALLOCATOR.lock().init(HEAP_START, HEAP_SIZE);
-        }
-        Ok(());
+        Page::range_inclusive(heap_start_page, heap_end_page)
     };
 
     for page in page_range {

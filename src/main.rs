@@ -80,17 +80,16 @@ fn kernel_main(boot_info: &'static BootInfo) -> ! {
 
     println!("no crashy!!!");
     droplet::hlt_loop();
-    loop {
-        use droplet::print;
-        print!("-")
-    }
+    // loop {
+    //     use droplet::print;
+    //     print!("-")
+    // }
 }
 
 #[cfg(not(test))]
 #[panic_handler]
 fn panic(info: &PanicInfo) -> ! {
     println!("{}", info);
-    loop {}
     droplet::hlt_loop();
 }
 
@@ -99,5 +98,3 @@ fn panic(info: &PanicInfo) -> ! {
 fn panic(info: &PanicInfo) -> ! {
     droplet::test_panic_handler(info);
 }
-
-// https://os.phil-opp.com/heap-allocation/ - tas aqui
