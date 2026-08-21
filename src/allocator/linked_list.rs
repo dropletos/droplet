@@ -1,4 +1,6 @@
-use x86_64::addr;
+use super::{Locked, align_up};
+use alloc::alloc::{GlobalAlloc, Layout};
+use core::{mem, ptr};
 
 struct ListNode {
     size: usize,
@@ -22,9 +24,6 @@ impl ListNode {
 pub struct LinkedListAllocator {
     head: ListNode,
 }
-
-use super::align_up;
-use core::mem;
 
 impl LinkedListAllocator {
     pub const fn new() -> Self {
@@ -80,11 +79,5 @@ impl LinkedListAllocator {
         }
 
         Ok(alloc_start);
-    };
+    }
 }
-
-use super::Locked;
-use alloc::alloc::{GlobalAlloc, Layout};
-use core::ptr;
-
-// https://os.phil-opp.com/allocator-designs/#implementing-globalalloc-1
