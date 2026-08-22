@@ -10,6 +10,7 @@ pub mod gdt;
 pub mod interrupts;
 pub mod memory;
 pub mod serial;
+pub mod task;
 pub mod vga_buffer;
 extern crate alloc;
 
@@ -56,8 +57,8 @@ entry_point!(test_kernel_main);
 #[cfg(test)]
 fn test_kernel_main(_boot_info: &'static BootInfo) -> ! {
     init();
-    gdt::init();
-    interrupts::init_idt();
+    // gdt::init();
+    // interrupts::init_idt();
     test_main();
     hlt_loop();
     loop {}

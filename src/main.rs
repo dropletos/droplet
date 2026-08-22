@@ -6,6 +6,9 @@
 
 use bootloader::{BootInfo, entry_point};
 use core::{fmt::Write, panic::PanicInfo};
+use droplet::task::executor::Executor;
+use droplet::task::keyboard;
+use droplet::task::{Task, simple_executor::SimpleExecutor};
 use droplet::{allocator, memory, println};
 use x86_64::{
     PhysAddr,
@@ -75,6 +78,11 @@ fn kernel_main(boot_info: &'static BootInfo) -> ! {
         Rc::strong_count(&cloned_reference)
     );
 
+    let mut executor = Executor::new();
+    executor.spawn(Task::new(example_task()));
+    executor.spawn(Task::new(keyboard::print_keypresses()));
+    executor.run();
+
     #[cfg(test)]
     test_main();
 
@@ -97,4 +105,13 @@ fn panic(info: &PanicInfo) -> ! {
 #[panic_handler]
 fn panic(info: &PanicInfo) -> ! {
     droplet::test_panic_handler(info);
+}
+
+async fn async_number() -> u32 {
+    4024
+}
+
+async fn example_task() {
+    let number = async_number().await;
+    println!("async number: {}", number);
 }

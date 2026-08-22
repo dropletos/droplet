@@ -162,16 +162,10 @@ fn test_println_many() {
 
 #[test_case]
 fn test_println_output() {
-    use core::fmt::Write;
-    use x86_64::instructions::interrupts;
-
-    let s = "LOTS OF STRING IN A SINGLE LINE";
-    interrupts::without_interrupts(|| {
-        let mut writer = WRITER.lock();
-        writeln!(writer, "\n{}", s).expect("writeln failed");
-        for (i, c) in s.chars().enumerate() {
-            let ScreenChar = WRITER.lock().buffer.Chars[BUFFER_HEIGHT - 2][i].read();
-            assert_eq!(char::from(ScreenChar.ascii_char), c);
-        }
-    });
+    let s = "lots in a single line, fuck yea";
+    println!("{}", s);
+    for (i, c) in s.chars().enumerate() {
+        let screen_char = WRITER.lock().buffer.Chars[BUFFER_HEIGHT - 2][i].read();
+        assert_eq!(char::from(screen_char.ascii_char), c);
+    }
 }

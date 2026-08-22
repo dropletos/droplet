@@ -1,56 +1,51 @@
-use crate::{print, println};
+use core::char;
+use core::task::Context;
+
+use crate::print;
+use crate::println;
 use conquer_once::spin::OnceCell;
-use core::{
-    pin::Pin,
-    task::{Context, Poll},
-};
+use core::{pin::Pin, task::Poll};
 use crossbeam_queue::ArrayQueue;
 use futures_util::{
-    stream::{Stream, StreamExt},
+    future::Ready,
+    stream::{Pending, Stream, StreamExt},
     task::AtomicWaker,
 };
 use pc_keyboard::{DecodedKey, HandleControl, Keyboard, ScancodeSet1, layouts};
+use x86_64::structures::idt::InterruptStackFrame;
 
 static SCANCODE_QUEUE: OnceCell<ArrayQueue<u8>> = OnceCell::uninit();
-static WAKER: AtomicWaker = AtomicWaker::new();
 
-/// Called by the keyboard interrupt handler
-///
-/// Must not block or allocate.
 pub(crate) fn add_scancode(scancode: u8) {
     if let Ok(queue) = SCANCODE_QUEUE.try_get() {
         if let Err(_) = queue.push(scancode) {
-            println!("WARNING: scancode queue full; dropping keyboard input");
+            println!("advise: scancode que full, dropping keyboard")
         } else {
             WAKER.wake();
         }
     } else {
-        println!("WARNING: scancode queue uninitialized");
+        println!("advise: scancode que uninitalised.")
     }
 }
 
 pub struct ScancodeStream {
-    _private: (),
+    _priavte: (),
 }
 
 impl ScancodeStream {
     pub fn new() -> Self {
         SCANCODE_QUEUE
             .try_init_once(|| ArrayQueue::new(100))
-            .expect("ScancodeStream::new should only be called once");
-        ScancodeStream { _private: () }
+            .expect("scancodestream::new only called once dimwit");
+        ScancodeStream { _priavte: () }
     }
 }
 
 impl Stream for ScancodeStream {
     type Item = u8;
 
-    fn poll_next(self: Pin<&mut Self>, cx: &mut Context) -> Poll<Option<u8>> {
-        let queue = SCANCODE_QUEUE
-            .try_get()
-            .expect("scancode queue not initialized");
-
-        // fast path
+    fn poll_next(self: Pin<&mut Self>, cx: &mut Context) -> Poll<Option<Self::Item>> {
+        let queue = SCANCODE_QUEUE.try_get().expect("not inital");
         if let Some(scancode) = queue.pop() {
             return Poll::Ready(Some(scancode));
         }
@@ -66,6 +61,8 @@ impl Stream for ScancodeStream {
     }
 }
 
+static WAKER: AtomicWaker = AtomicWaker::new();
+
 pub async fn print_keypresses() {
     let mut scancodes = ScancodeStream::new();
     let mut keyboard = Keyboard::new(
@@ -78,7 +75,7 @@ pub async fn print_keypresses() {
         if let Ok(Some(key_event)) = keyboard.add_byte(scancode) {
             if let Some(key) = keyboard.process_keyevent(key_event) {
                 match key {
-                    DecodedKey::Unicode(character) => print!("{}", character),
+                    DecodedKey::Unicode(char) => print!("{}", char),
                     DecodedKey::RawKey(key) => print!("{:?}", key),
                 }
             }
